@@ -6,6 +6,7 @@ public partial class MainForm : Form
     private readonly DataGridView _grid = new();
     private readonly Button _btnNouveau = new();
     private readonly Button _btnSeance = new();
+    private readonly Button _btnAjouterSeances = new();
     private readonly Button _btnHistorique = new();
     private readonly Button _btnModifier = new();
     private readonly Button _btnSupprimer = new();
@@ -80,6 +81,10 @@ public partial class MainForm : Form
         _btnSeance.AutoSize = true;
         _btnSeance.Click += (s, e) => SeanceEffectuee();
 
+        _btnAjouterSeances.Text = "Ajouter séances";
+        _btnAjouterSeances.AutoSize = true;
+        _btnAjouterSeances.Click += (s, e) => AjouterSeances();
+
         _btnHistorique.Text = "Historique / Corriger";
         _btnHistorique.AutoSize = true;
         _btnHistorique.Click += (s, e) => VoirHistorique();
@@ -110,7 +115,7 @@ public partial class MainForm : Form
 
         panel.Controls.AddRange(new Control[]
         {
-            _btnNouveau, _btnSeance, _btnHistorique, _btnModifier, _btnSupprimer,
+            _btnNouveau, _btnSeance, _btnAjouterSeances, _btnHistorique, _btnModifier, _btnSupprimer,
             _btnExportJson, _btnExportCsv, _btnImport, _lblInfo
         });
 
@@ -172,11 +177,10 @@ public partial class MainForm : Form
 
         if (client.SeancesRestantes <= 0)
         {
-            var rep = MessageBox.Show(
-                $"{client.Nom} n'a plus de séance (0/3 ou plus). Voulez-vous quand même enregistrer une séance et repasser à 1 séance restante ?",
-                "Plus de séances", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (rep != DialogResult.Yes) return;
-            client.SeancesRestantes = 1;
+            MessageBox.Show(
+                $"{client.Nom} n'a plus de séance. Utilisez le bouton « Ajouter séances » pour recharger son abonnement.",
+                "Plus de séances", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
         }
 
         client.Seances.Add(new Seance { Date = DateTime.Now });
@@ -186,6 +190,56 @@ public partial class MainForm : Form
         MessageBox.Show(
             $"Séance enregistrée pour {client.Nom} le {DateTime.Now:dd/MM/yyyy HH:mm}.\nSéances restantes : {client.SeancesRestantes}.",
             "Séance enregistrée", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private void AjouterSeances()
+    {
+        var client = GetSelectedOrWarn();
+        if (client == null) return;
+
+        var nombre = DemanderNombre(
+            $"Combien de séances ajouter à {client.Nom} ?",
+            $"Ajouter séances — {client.Nom}",
+            1, 99, 3);
+        if (nombre == null) return;
+
+        client.SeancesRestantes += nombre.Value;
+        SaveAndRefresh();
+
+        MessageBox.Show(
+            $"{nombre.Value} séance(s) ajoutée(s) à {client.Nom}.\nSéances restantes : {client.SeancesRestantes}.",
+            "Séances ajoutées", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private int? DemanderNombre(string message, string titre, int min, int max, int defaut)
+    {
+        var lbl = new Label { Text = message, Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(10, 10, 10, 0) };
+        var num = new NumericUpDown
+        {
+            Minimum = min,
+            Maximum = max,
+            Value = defaut,
+            Left = 15,
+            Top = 45,
+            Width = 80
+        };
+        var btnOk = new Button { Text = "Ajouter", Left = 120, Top = 43, Width = 90, DialogResult = DialogResult.OK };
+        var btnAnnuler = new Button { Text = "Annuler", Left = 220, Top = 43, Width = 90, DialogResult = DialogResult.Cancel };
+
+        using var dialog = new Form
+        {
+            Text = titre,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+            StartPosition = FormStartPosition.CenterParent,
+            ClientSize = new Size(320, 90),
+            AcceptButton = btnOk,
+            CancelButton = btnAnnuler
+        };
+        dialog.Controls.AddRange(new Control[] { lbl, num, btnOk, btnAnnuler });
+
+        return dialog.ShowDialog(this) == DialogResult.OK ? (int)num.Value : null;
     }
 
     private void VoirHistorique()
