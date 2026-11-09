@@ -34,11 +34,30 @@ public partial class MainForm : Form
         _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         _grid.MultiSelect = false;
         _grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        _grid.AutoGenerateColumns = false;
+        _grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "ColNom",
+            DataPropertyName = "Nom",
+            HeaderText = "Nom"
+        });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "ColTel",
+            DataPropertyName = "Telephone",
+            HeaderText = "Téléphone"
+        });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "ColRestantes",
+            DataPropertyName = "SeancesRestantes",
+            HeaderText = "Séances restantes"
+        });
         _grid.DataBindingComplete += (s, e) =>
         {
             foreach (DataGridViewRow row in _grid.Rows)
             {
-                var restant = (int)row.Cells["SeancesRestantes"].Value;
+                var restant = row.Cells["ColRestantes"].Value as int?;
                 row.DefaultCellStyle.BackColor = restant == 0
                     ? Color.MistyRose
                     : restant == 1 ? Color.LightYellow : Color.White;
@@ -107,13 +126,6 @@ public partial class MainForm : Form
         _grid.DataSource = _file.Clients
             .OrderBy(c => c.Nom, StringComparer.OrdinalIgnoreCase)
             .ToList();
-
-        if (!_grid.Columns.Contains("Id")) return;
-        _grid.Columns["Id"].Visible = false;
-        _grid.Columns["Nom"].HeaderText = "Nom";
-        _grid.Columns["Telephone"].HeaderText = "Téléphone";
-        _grid.Columns["SeancesRestantes"].HeaderText = "Séances restantes";
-        _grid.Columns["Seances"].Visible = false;
 
         _lblInfo.Text = $"{_file.Clients.Count} client(s) — données : %APPDATA%\\GestionCryo\\clients.json";
     }
