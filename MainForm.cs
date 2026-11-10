@@ -85,6 +85,12 @@ public partial class MainForm : Form
             DataPropertyName = "SeancesRestantes",
             HeaderText = "Séances restantes"
         });
+        _grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "ColValidite",
+            DataPropertyName = "Validite",
+            HeaderText = "Valable jusqu'au"
+        });
         _grid.DataBindingComplete += (s, e) =>
         {
             if (_grid.Columns.Count < 3) return;

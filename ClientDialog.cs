@@ -51,6 +51,24 @@ public class ClientDialog : Form
             _txtNom.Text = _existing.Nom;
             _txtTel.Text = _existing.Telephone;
             _numSeances.Value = Math.Min(_existing.SeancesRestantes, 99);
+
+            if (_existing.Achats.Count > 0)
+            {
+                var jours = _existing.JoursRestants;
+                var texte = $"Durée de validité : séances valables jusqu'au {_existing.Validite} " +
+                    (jours >= 0 ? $"({jours} jour(s) restant(s))" : "(expiré)");
+                var lblValidite = new Label
+                {
+                    Text = texte,
+                    Left = 20,
+                    Top = 175,
+                    Width = 340,
+                    AutoSize = false,
+                    ForeColor = jours >= 0 && jours <= 60 ? Color.DarkOrange : Color.DimGray
+                };
+                ClientSize = new Size(380, 235);
+                Controls.Add(lblValidite);
+            }
         }
 
         AcceptButton = _btnOk;

@@ -22,6 +22,26 @@ public class Client
     public int SeancesRestantes { get; set; } = 3;
     public List<Seance> Seances { get; set; } = new();
     public List<Achat> Achats { get; set; } = new();
+
+    public string Validite
+    {
+        get
+        {
+            if (Achats.Count == 0) return "";
+            var plusProche = Achats.Min(a => a.Expiration);
+            return plusProche.ToString("dd/MM/yyyy");
+        }
+    }
+
+    public int JoursRestants
+    {
+        get
+        {
+            if (Achats.Count == 0) return -1;
+            var plusProche = Achats.Min(a => a.Expiration);
+            return (int)(plusProche.Date - DateTime.Now.Date).TotalDays;
+        }
+    }
 }
 
 public class ClientFile
