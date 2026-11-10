@@ -14,6 +14,7 @@ public partial class MainForm : Form
     private readonly Button _btnExportJson = new();
     private readonly Button _btnExportCsv = new();
     private readonly Button _btnImport = new();
+    private readonly Button _btnImportCsv = new();
     private readonly Label _lblInfo = new();
 
     public MainForm()
@@ -122,6 +123,10 @@ public partial class MainForm : Form
         _btnImport.AutoSize = true;
         _btnImport.Click += (s, e) => ImporterSauvegarde();
 
+        _btnImportCsv.Text = "Importer CSV";
+        _btnImportCsv.AutoSize = true;
+        _btnImportCsv.Click += (s, e) => ImporterCsv();
+
         _lblInfo.AutoSize = true;
         _lblInfo.Padding = new Padding(12, 6, 0, 0);
         _lblInfo.ForeColor = Color.DimGray;
@@ -130,7 +135,7 @@ public partial class MainForm : Form
         {
             _btnNouveau, _btnSeance, _btnAjouterSeances, _btnHistorique, _btnAgenda,
             _btnModifier, _btnSupprimer,
-            _btnExportJson, _btnExportCsv, _btnImport, _lblInfo
+            _btnExportJson, _btnExportCsv, _btnImport, _btnImportCsv, _lblInfo
         });
 
         Controls.Add(_grid);
@@ -347,6 +352,34 @@ public partial class MainForm : Form
         _file.Clients = imported.Clients;
         SaveAndRefresh();
         MessageBox.Show("Données restaurées.", "Restauration",
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private void ImporterCsv()
+    {
+        using var dialog = new OpenFileDialog
+        {
+            Title = "Importer un fichier CSV",
+            Filter = "Fichier CSV (*.csv)|*.csv"
+        };
+
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+        var (nouveaux, misAJour, erreurs) = Storage.ImportCsv(dialog.FileName, _file.Clients);
+
+        var rep = MessageBox.Show(
+            $"Fichier : {dialog.FileName}\n\n" +
+            $"{nouveaux.Count} nouveau(x) client(s)\n" +
+            $"{misAJour.Count} client(s) existant(s) mis à jour\n" +
+            $"{erreurs} ligne(s) ignorée(s)\n\n" +
+            "Confirmer l'import ?",
+            "Importer CSV", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        if (rep != DialogResult.Yes) return;
+
+        _file.Clients.AddRange(nouveaux);
+        SaveAndRefresh();
+
+        MessageBox.Show("Import terminé.", "Importer CSV",
             MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 }
