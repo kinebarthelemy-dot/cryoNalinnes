@@ -7,6 +7,7 @@ Petite application Windows Forms (C# / .NET 8) pour gérer les abonnements de s�
 - Fichier client : nom, téléphone, séances restantes (3 par défaut)
 - Bouton « Séance effectuée » : décrémente le compteur et enregistre la date/heure de la séance
 - Historique par client avec dates, suppression d'une séance pour corriger une erreur (+1 au compteur)
+- Agenda / Journal : sélectionner une date et voir toutes les personnes venues ce jour-là, avec l'heure
 - Couleurs : ligne rouge = plus de séance, jaune = dernière séance
 - Les données sont sauvegardées automatiquement dans `%APPDATA%\GestionCryo\clients.json`
 - Export de sauvegarde : fichier JSON complet (restaurable) et export CSV lisible dans Excel

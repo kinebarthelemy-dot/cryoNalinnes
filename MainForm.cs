@@ -8,6 +8,7 @@ public partial class MainForm : Form
     private readonly Button _btnSeance = new();
     private readonly Button _btnAjouterSeances = new();
     private readonly Button _btnHistorique = new();
+    private readonly Button _btnAgenda = new();
     private readonly Button _btnModifier = new();
     private readonly Button _btnSupprimer = new();
     private readonly Button _btnExportJson = new();
@@ -91,6 +92,14 @@ public partial class MainForm : Form
         _btnHistorique.AutoSize = true;
         _btnHistorique.Click += (s, e) => VoirHistorique();
 
+        _btnAgenda.Text = "Agenda / Journal";
+        _btnAgenda.AutoSize = true;
+        _btnAgenda.Click += (s, e) =>
+        {
+            using var agenda = new AgendaForm(_file);
+            agenda.ShowDialog(this);
+        };
+
         _btnModifier.Text = "Modifier client";
         _btnModifier.AutoSize = true;
         _btnModifier.Click += (s, e) => ModifierClient();
@@ -117,7 +126,8 @@ public partial class MainForm : Form
 
         panel.Controls.AddRange(new Control[]
         {
-            _btnNouveau, _btnSeance, _btnAjouterSeances, _btnHistorique, _btnModifier, _btnSupprimer,
+            _btnNouveau, _btnSeance, _btnAjouterSeances, _btnHistorique, _btnAgenda,
+            _btnModifier, _btnSupprimer,
             _btnExportJson, _btnExportCsv, _btnImport, _lblInfo
         });
 
