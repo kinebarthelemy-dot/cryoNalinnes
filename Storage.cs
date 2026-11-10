@@ -9,10 +9,19 @@ public static class Storage
         WriteIndented = true
     };
 
-    private static string FilePath =>
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "GestionCryo", "clients.json");
+    private static string FilePath
+    {
+        get
+        {
+            var oneDrive = Environment.GetEnvironmentVariable("OneDrive");
+            if (!string.IsNullOrEmpty(oneDrive) && Directory.Exists(oneDrive))
+                return Path.Combine(oneDrive, "GestionCryo", "clients.json");
+
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "GestionCryo", "clients.json");
+        }
+    }
 
     public static ClientFile Load()
     {
