@@ -56,9 +56,11 @@ public partial class MainForm : Form
         });
         _grid.DataBindingComplete += (s, e) =>
         {
+            if (_grid.Columns.Count < 3) return;
             foreach (DataGridViewRow row in _grid.Rows)
             {
-                var restant = row.Cells["ColRestantes"].Value as int?;
+                var restant = row.Cells[2].Value as int?;
+                if (restant == null) continue;
                 row.DefaultCellStyle.BackColor = restant == 0
                     ? Color.MistyRose
                     : restant == 1 ? Color.LightYellow : Color.White;
