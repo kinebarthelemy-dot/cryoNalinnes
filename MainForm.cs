@@ -22,6 +22,35 @@ public partial class MainForm : Form
         _file = Storage.Load();
         InitializeUi();
         RefreshGrid();
+        VerifierExpiration();
+    }
+
+    private void VerifierExpiration()
+    {
+        var expires = _file.Clients
+            .SelectMany(c => c.Achats, (c, a) => new { Client = c, Achat = a })
+            .Where(x => x.Achat.EstExpire)
+            .ToList();
+
+        if (expires.Count == 0) return;
+
+        var details = string.Join("\n", expires
+            .OrderBy(x => x.Client.Nom)
+            .Select(x =>
+                $"- {x.Client.Nom} : {x.Achat.Nombre} séance(s) achetée(s) le {x.Achat.Date:dd/MM/yyyy}, expirée(s) le {x.Achat.Expiration:dd/MM/yyyy}"));
+
+        var rep = MessageBox.Show(
+            $"Des crédits de séances ont expiré (plus de 2 ans) :\n\n{details}\n\n" +
+            "Retirer ces séances des compteurs ?",
+            "Séances expirées", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+        if (rep != DialogResult.Yes) return;
+
+        foreach (var x in expires)
+        {
+            x.Client.Achats.Remove(x.Achat);
+            x.Client.SeancesRestantes = Math.Max(0, x.Client.SeancesRestantes - x.Achat.Nombre);
+        }
+        SaveAndRefresh();
     }
 
     private void InitializeUi()
@@ -174,7 +203,13 @@ public partial class MainForm : Form
         using var dialog = new ClientDialog(null);
         if (dialog.ShowDialog(this) == DialogResult.OK)
         {
-            _file.Clients.Add(dialog.Client!);
+            if (dialog.Client!.SeancesRestantes > 0)
+                dialog.Client.Achats.Add(new Achat
+                {
+                    Date = DateTime.Now,
+                    Nombre = dialog.Client.SeancesRestantes
+                });
+            _file.Clients.Add(dialog.Client);
             SaveAndRefresh();
         }
     }
@@ -223,10 +258,18 @@ public partial class MainForm : Form
         if (nombre == null) return;
 
         client.SeancesRestantes += nombre.Value;
+        client.Achats.Add(new Achat
+        {
+            Date = DateTime.Now,
+            Nombre = nombre.Value
+        });
         SaveAndRefresh();
 
+        var expiration = DateTime.Now.AddYears(2);
         MessageBox.Show(
-            $"{nombre.Value} séance(s) ajoutée(s) à {client.Nom}.\nSéances restantes : {client.SeancesRestantes}.",
+            $"{nombre.Value} séance(s) ajoutée(s) à {client.Nom}.\n" +
+            $"Séances restantes : {client.SeancesRestantes}.\n\n" +
+            $"Valables jusqu'au {expiration:dd/MM/yyyy} (2 ans).",
             "Séances ajoutées", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
