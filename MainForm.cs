@@ -98,6 +98,8 @@ public partial class MainForm : Form
         {
             using var agenda = new AgendaForm(_file);
             agenda.ShowDialog(this);
+            if (agenda.Modifications)
+                SaveAndRefresh();
         };
 
         _btnModifier.Text = "Modifier client";
