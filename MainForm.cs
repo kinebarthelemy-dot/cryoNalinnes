@@ -16,6 +16,7 @@ public partial class MainForm : Form
     private readonly Button _btnImport = new();
     private readonly Button _btnImportCsv = new();
     private readonly Label _lblInfo = new();
+    private readonly TextBox _txtRecherche = new();
 
     public MainForm()
     {
@@ -166,11 +167,21 @@ public partial class MainForm : Form
         _lblInfo.Padding = new Padding(12, 6, 0, 0);
         _lblInfo.ForeColor = Color.DimGray;
 
+        var lblRecherche = new Label
+        {
+            Text = "Rechercher :",
+            AutoSize = true,
+            Padding = new Padding(20, 8, 0, 0)
+        };
+        _txtRecherche.Width = 180;
+        _txtRecherche.TextChanged += (s, e) => RefreshGrid();
+
         panel.Controls.AddRange(new Control[]
         {
             _btnNouveau, _btnSeance, _btnAjouterSeances, _btnHistorique, _btnAgenda,
             _btnModifier, _btnSupprimer,
-            _btnExportJson, _btnExportCsv, _btnImport, _btnImportCsv, _lblInfo
+            _btnExportJson, _btnExportCsv, _btnImport, _btnImportCsv, _lblInfo,
+            lblRecherche, _txtRecherche
         });
 
         Controls.Add(_grid);
@@ -181,12 +192,22 @@ public partial class MainForm : Form
 
     private void RefreshGrid()
     {
-        _grid.DataSource = null;
-        _grid.DataSource = _file.Clients
+        var recherche = _txtRecherche.Text.Trim();
+
+        var clients = _file.Clients
+            .Where(c => string.IsNullOrEmpty(recherche)
+                || c.Nom.Contains(recherche, StringComparison.OrdinalIgnoreCase)
+                || c.Telephone.Contains(recherche, StringComparison.OrdinalIgnoreCase))
             .OrderBy(c => c.Nom, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        _lblInfo.Text = $"{_file.Clients.Count} client(s) — données : %APPDATA%\\GestionCryo\\clients.json";
+        _grid.DataSource = null;
+        _grid.DataSource = clients;
+
+        var suffixe = string.IsNullOrEmpty(recherche)
+            ? ""
+            : $" — {clients.Count} résultat(s) pour « {recherche} »";
+        _lblInfo.Text = $"{_file.Clients.Count} client(s){suffixe}";
     }
 
     private void SaveAndRefresh()

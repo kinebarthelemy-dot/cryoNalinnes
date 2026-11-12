@@ -72,27 +72,55 @@ public static class Storage
         try
         {
             var lignes = File.ReadAllLines(path);
-            for (int i = 0; i < lignes.Length; i++)
+            int idxNom = 0, idxTel = 1, idxSeances = 2;
+            int debut = 0;
+
+            if (lignes.Length > 0)
+            {
+                var sep = DetecterSeparateur(lignes[0]);
+                var entete = lignes[0].ToLowerInvariant().Split(sep)
+                    .Select(p => p.Trim().Trim('"')).ToArray();
+
+                if (entete.Any(h => h.Contains("nom")))
+                {
+                    var iNom = IndexColonne(entete, new[] { "nom", "name" });
+                    var iTel = IndexColonne(entete, new[] { "tel", "gsm", "phone", "portable" });
+                    var iSe = IndexColonne(entete, new[] { "seance", "séance", "sance" });
+
+                    if (iNom >= 0) idxNom = iNom;
+                    if (iTel >= 0) idxTel = iTel;
+                    if (iSe >= 0) idxSeances = iSe;
+                    debut = 1;
+                }
+            }
+
+            for (int i = debut; i < lignes.Length; i++)
             {
                 var ligne = lignes[i].Trim();
                 if (ligne.Length == 0) continue;
-                if (i == 0 && ligne.StartsWith("Nom", StringComparison.OrdinalIgnoreCase)) continue;
 
-                var parties = ligne.Split(';');
-                if (parties.Length < 3 || string.IsNullOrWhiteSpace(parties[0]))
+                var sep = DetecterSeparateur(ligne);
+                var parties = ligne.Split(sep)
+                    .Select(p => p.Trim().Trim('"'))
+                    .ToArray();
+
+                var maxNecessaire = Math.Max(idxNom, Math.Max(idxTel, idxSeances));
+                if (parties.Length <= maxNecessaire || string.IsNullOrWhiteSpace(parties[idxNom]))
                 {
                     erreurs++;
                     continue;
                 }
 
-                if (!int.TryParse(parties[2].Trim(), out int restantes))
+                var nom = parties[idxNom].Trim();
+                var tel = idxTel < parties.Length ? parties[idxTel].Trim() : "";
+                var txtSeances = idxSeances < parties.Length ? parties[idxSeances].Trim() : "0";
+
+                if (!int.TryParse(txtSeances, out int restantes))
                 {
                     erreurs++;
                     continue;
                 }
 
-                var nom = parties[0].Trim();
-                var tel = parties[1].Trim();
                 var existant = existants.FirstOrDefault(
                     c => c.Nom.Equals(nom, StringComparison.OrdinalIgnoreCase));
 
@@ -119,5 +147,29 @@ public static class Storage
         }
 
         return (nouveaux, misAJour, erreurs);
+    }
+
+    private static char DetecterSeparateur(string ligne)
+    {
+        int pv = ligne.Count(c => c == ';');
+        int v = ligne.Count(c => c == ',');
+        int t = ligne.Count(c => c == '\t');
+
+        if (v > pv && v > t) return ',';
+        if (t > pv && t > v) return '\t';
+        return ';';
+    }
+
+    private static int IndexColonne(string[] entete, string[] mots)
+    {
+        for (int i = 0; i < entete.Length; i++)
+        {
+            foreach (var mot in mots)
+            {
+                if (entete[i].Contains(mot))
+                    return i;
+            }
+        }
+        return -1;
     }
 }
