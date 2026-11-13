@@ -159,7 +159,7 @@ public partial class MainForm : Form
         _btnImport.AutoSize = true;
         _btnImport.Click += (s, e) => ImporterSauvegarde();
 
-        _btnImportCsv.Text = "Importer CSV";
+        _btnImportCsv.Text = "Importer CSV/Excel";
         _btnImportCsv.AutoSize = true;
         _btnImportCsv.Click += (s, e) => ImporterCsv();
 
@@ -429,13 +429,16 @@ public partial class MainForm : Form
     {
         using var dialog = new OpenFileDialog
         {
-            Title = "Importer un fichier CSV",
-            Filter = "Fichier CSV (*.csv)|*.csv"
+            Title = "Importer un fichier CSV ou Excel",
+            Filter = "Fichiers supportés (*.csv;*.xlsx)|*.csv;*.xlsx|Fichier CSV (*.csv)|*.csv|Fichier Excel (*.xlsx)|*.xlsx"
         };
 
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
-        var (nouveaux, misAJour, erreurs) = Storage.ImportCsv(dialog.FileName, _file.Clients);
+        var (nouveaux, misAJour, erreurs) =
+            dialog.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
+                ? Storage.ImportXlsx(dialog.FileName, _file.Clients)
+                : Storage.ImportCsv(dialog.FileName, _file.Clients);
 
         var rep = MessageBox.Show(
             $"Fichier : {dialog.FileName}\n\n" +
