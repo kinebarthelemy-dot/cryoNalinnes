@@ -122,7 +122,8 @@ public static class Storage
         var misAJour = new List<Client>();
         var erreurs = 0;
 
-        int idxNom = 0, idxTel = 1, idxSeances = 2, idxDate = 3;
+        int idxNom = 0, idxSeances = 1, idxTel = 2, idxDate = 3, idxAchetees = -1;
+        bool dateEstExpiration = true;
         int debut = 0;
 
         if (lignes.Count > 0)
@@ -135,13 +136,28 @@ public static class Storage
             {
                 var iNom = IndexColonne(entete, new[] { "nom", "name" });
                 var iTel = IndexColonne(entete, new[] { "tel", "gsm", "phone", "portable" });
-                var iSe = IndexColonne(entete, new[] { "seance", "séance", "sance" });
-                var iDate = IndexColonne(entete, new[] { "date", "validite", "validité", "achat" });
+                var iRestantes = IndexColonne(entete, new[] { "restante" });
+                var iDate = IndexColonne(entete, new[] { "date", "validite", "validité", "achat", "apd", "historique", "expir" });
+
+                var iAchetees = -1;
+                for (int i = 0; i < entete.Length; i++)
+                {
+                    var h = entete[i];
+                    if ((h.Contains("seance") || h.Contains("séance")) && !h.Contains("restante"))
+                    {
+                        iAchetees = i;
+                        break;
+                    }
+                }
 
                 if (iNom >= 0) idxNom = iNom;
                 if (iTel >= 0) idxTel = iTel;
-                if (iSe >= 0) idxSeances = iSe;
                 if (iDate >= 0) idxDate = iDate;
+                if (iRestantes >= 0) idxSeances = iRestantes;
+                else if (iAchetees >= 0) idxSeances = iAchetees;
+                idxAchetees = iAchetees >= 0 ? iAchetees : idxSeances;
+
+                dateEstExpiration = iDate < 0 || entete[iDate].Contains("expir");
                 debut = 1;
             }
         }
@@ -150,7 +166,7 @@ public static class Storage
         {
             var parties = lignes[i];
 
-            var maxNecessaire = Math.Max(idxNom, Math.Max(idxTel, idxSeances));
+            var maxNecessaire = Math.Max(idxNom, Math.Max(idxSeances, idxDate));
             if (parties.Length <= maxNecessaire || string.IsNullOrWhiteSpace(parties[idxNom]))
             {
                 erreurs++;
@@ -161,6 +177,9 @@ public static class Storage
             var tel = idxTel < parties.Length ? parties[idxTel].Trim() : "";
             var txtSeances = idxSeances < parties.Length ? parties[idxSeances].Trim() : "0";
             var txtDate = idxDate < parties.Length ? parties[idxDate].Trim() : "";
+            var txtAchetees = idxAchetees >= 0 && idxAchetees < parties.Length
+                ? parties[idxAchetees].Trim()
+                : "";
 
             if (!int.TryParse(txtSeances, out int restantes))
             {
@@ -171,12 +190,13 @@ public static class Storage
             DateTime? dateAchat = null;
             if (!string.IsNullOrWhiteSpace(txtDate))
             {
-                dateAchat = ParserDate(txtDate);
-                if (dateAchat == null)
+                var dateLue = ParserDate(txtDate);
+                if (dateLue == null)
                 {
                     erreurs++;
                     continue;
                 }
+                dateAchat = dateEstExpiration ? dateLue.Value.AddYears(-2) : dateLue.Value;
             }
 
             var existant = existants.FirstOrDefault(
@@ -201,11 +221,15 @@ public static class Storage
                 nouveaux.Add(client);
             }
 
-            if (dateAchat.HasValue && restantes > 0)
+            var nombreAchat = restantes;
+            if (int.TryParse(txtAchetees, out int achetees) && achetees > 0)
+                nombreAchat = achetees;
+
+            if (dateAchat.HasValue && nombreAchat > 0)
                 client.Achats.Add(new Achat
                 {
                     Date = dateAchat.Value,
-                    Nombre = restantes
+                    Nombre = nombreAchat
                 });
         }
 
